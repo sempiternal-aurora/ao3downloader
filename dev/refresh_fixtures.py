@@ -19,8 +19,8 @@ import requests
 from bs4 import BeautifulSoup
 
 from ao3downloader import exceptions, parse_soup, strings
+from ao3downloader.parse_text import get_payload, get_work_number
 from ao3downloader.repo import Repository
-from ao3downloader.parse_text import get_work_number, get_payload
 
 
 class RefreshAbortedException(Exception):
@@ -30,55 +30,76 @@ class RefreshAbortedException(Exception):
 FIXTURES = [
     # # currently has to be updated manually - the refresh script never picks up the gate page, for some reason
     # {"name": "explicitWorkLoggedOut.html", "url": "/works/20907563",                   "type": "page"},
-
     # logged-out pages
-    {"name": "bookmarks.html",             "url": "/users/ao3downloader_ci/bookmarks", "type": "page"},
-    {"name": "deletedWork.html",           "url": "/works/99999999999",                "type": "page"},
-    {"name": "hiddenWork.html",            "url": "/works/47308798",                   "type": "page"},
-    {"name": "lockedWorkLoggedOut.html",   "url": "/works/185710",                     "type": "page"},
-    {"name": "multipleSeries.html",        "url": "/works/41214669",                   "type": "page"},
-    {"name": "unlockedWork.html",          "url": "/works/41822007",                   "type": "page"},
-    {"name": "unlockedWorkNoSkin.html",    "url": "/works/23009290",                   "type": "page"},
-
+    {
+        "name": "bookmarks.html",
+        "url": "/users/ao3downloader_ci/bookmarks",
+        "type": "page",
+    },
+    {"name": "deletedWork.html", "url": "/works/99999999999", "type": "page"},
+    {"name": "hiddenWork.html", "url": "/works/47308798", "type": "page"},
+    {"name": "lockedWorkLoggedOut.html", "url": "/works/185710", "type": "page"},
+    {"name": "multipleSeries.html", "url": "/works/41214669", "type": "page"},
+    {"name": "unlockedWork.html", "url": "/works/41822007", "type": "page"},
+    {"name": "unlockedWorkNoSkin.html", "url": "/works/23009290", "type": "page"},
     # logged-out ebooks
-    {"name": "incompleteWork.epub",        "url": "/works/218676",                     "type": "book"},
-    {"name": "incompleteWork.pdf",         "url": "/works/218676",                     "type": "book"},
-    {"name": "incompleteWork.mobi",        "url": "/works/218676",                     "type": "book"},
-    {"name": "incompleteWork.azw3",        "url": "/works/218676",                     "type": "book"},
-    {"name": "incompleteWork.html",        "url": "/works/218676",                     "type": "book"},
-    {"name": "workInSeries.epub",          "url": "/works/334557",                     "type": "book"},
-    {"name": "workInSeries.pdf",           "url": "/works/334557",                     "type": "book"},
-    {"name": "workInSeries.mobi",          "url": "/works/334557",                     "type": "book"},
-    {"name": "workInSeries.azw3",          "url": "/works/334557",                     "type": "book"},
-    {"name": "workInSeries.html",          "url": "/works/334557",                     "type": "book"},
-    {"name": "tagWall.pdf",                "url": "/works/20907563",                   "type": "book"},
-    {"name": "epubTest.epub",              "url": "/works/23009290",                   "type": "book"},
-    {"name": "pdfTest.pdf",                "url": "/works/23009290",                   "type": "book"},
-    {"name": "mobiTest.mobi",              "url": "/works/23009290",                   "type": "book"},
-    {"name": "azw3Test.azw3",              "url": "/works/23009290",                   "type": "book"},
-    {"name": "htmlTest.html",              "url": "/works/23009290",                   "type": "book"},
-
+    {"name": "incompleteWork.epub", "url": "/works/218676", "type": "book"},
+    {"name": "incompleteWork.pdf", "url": "/works/218676", "type": "book"},
+    {"name": "incompleteWork.mobi", "url": "/works/218676", "type": "book"},
+    {"name": "incompleteWork.azw3", "url": "/works/218676", "type": "book"},
+    {"name": "incompleteWork.html", "url": "/works/218676", "type": "book"},
+    {"name": "workInSeries.epub", "url": "/works/334557", "type": "book"},
+    {"name": "workInSeries.pdf", "url": "/works/334557", "type": "book"},
+    {"name": "workInSeries.mobi", "url": "/works/334557", "type": "book"},
+    {"name": "workInSeries.azw3", "url": "/works/334557", "type": "book"},
+    {"name": "workInSeries.html", "url": "/works/334557", "type": "book"},
+    {"name": "tagWall.pdf", "url": "/works/20907563", "type": "book"},
+    {"name": "epubTest.epub", "url": "/works/23009290", "type": "book"},
+    {"name": "pdfTest.pdf", "url": "/works/23009290", "type": "book"},
+    {"name": "mobiTest.mobi", "url": "/works/23009290", "type": "book"},
+    {"name": "azw3Test.azw3", "url": "/works/23009290", "type": "book"},
+    {"name": "htmlTest.html", "url": "/works/23009290", "type": "book"},
     # logged-in pages
     # explicitWorkLoggedIn.html requires test account to have show adult content without warning setting enabled
-    {"name": "explicitWorkLoggedIn.html",  "url": "/works/20907563",                               "type": "page", "login": True},
-    {"name": "lockedWorkLoggedIn.html",    "url": "/works/185710",                                 "type": "page", "login": True}, 
-    {"name": "markedForLater.html",        "url": "/works/66326125",                               "type": "page", "login": True},
-    {"name": "markedForLaterList.html",    "url": "/users/ao3downloader_ci/readings?show=to-read", "type": "page", "login": True},
+    {
+        "name": "explicitWorkLoggedIn.html",
+        "url": "/works/20907563",
+        "type": "page",
+        "login": True,
+    },
+    {
+        "name": "lockedWorkLoggedIn.html",
+        "url": "/works/185710",
+        "type": "page",
+        "login": True,
+    },
+    {
+        "name": "markedForLater.html",
+        "url": "/works/66326125",
+        "type": "page",
+        "login": True,
+    },
+    {
+        "name": "markedForLaterList.html",
+        "url": "/users/ao3downloader_ci/readings?show=to-read",
+        "type": "page",
+        "login": True,
+    },
 ]
 
 IGNORED_SELECTORS = [
     '[name="csrf-token"]',
     '[name="authenticity_token"]',
     '[aria-hidden="true"]',
-    '#site_search_tooltip',
-    '#show_comments_link',
-    '.kudos',
-    '.hits',
-    '.bookmarks',
-    '.status',
-    '.stats',
-    '.menu',
-    'script',
+    "#site_search_tooltip",
+    "#show_comments_link",
+    ".kudos",
+    ".hits",
+    ".bookmarks",
+    ".status",
+    ".stats",
+    ".menu",
+    "script",
 ]
 
 USER_AGENT = "ao3downloader-ci (+https://github.com/nianeyna/ao3downloader)"
@@ -91,8 +112,11 @@ CLOUDFLARE_DIAGNOSTIC_HEADERS = ("cf-ray", "cf-mitigated", "server")
 def cloudflare_diagnostics(response: requests.Response) -> str:
     """Summarize identifying headers from a challenge response."""
 
-    present = [f"{name}={response.headers[name]}" for name in CLOUDFLARE_DIAGNOSTIC_HEADERS
-               if name in response.headers]
+    present = [
+        f"{name}={response.headers[name]}"
+        for name in CLOUDFLARE_DIAGNOSTIC_HEADERS
+        if name in response.headers
+    ]
     return ", ".join(present) if present else "no cloudflare headers present"
 
 
@@ -100,11 +124,16 @@ def make_request(session, url, method="GET", data=None):
     """Make a request with retry logic for errors, 5xx, 429, and cloudflare responses."""
 
     for attempt in range(MAX_RETRIES + 1):
-        delay = 0.1 * (2 ** attempt)
+        delay = 0.1 * (2**attempt)
 
         try:
-            response = session.request(method, url, data=data,
-                                       headers={"user-agent": USER_AGENT}, timeout=TIMEOUT)
+            response = session.request(
+                method,
+                url,
+                data=data,
+                headers={"user-agent": USER_AGENT},
+                timeout=TIMEOUT,
+            )
         except requests.RequestException as e:
             if attempt < MAX_RETRIES:
                 print(f"  {e.__class__.__name__}, retrying in {delay:.1f}s...")
@@ -133,11 +162,14 @@ def make_request(session, url, method="GET", data=None):
         if Repository.is_cloudflare_response(response):
             diagnostics = cloudflare_diagnostics(response)
             if attempt < MAX_RETRIES:
-                print(f"  cloudflare response ({diagnostics}), retrying in {delay:.1f}s...")
+                print(
+                    f"  cloudflare response ({diagnostics}), retrying in {delay:.1f}s..."
+                )
                 sleep(delay)
                 continue
             raise exceptions.CloudflareException(
-                f"cloudflare response after {MAX_RETRIES} retries ({diagnostics})")
+                f"cloudflare response after {MAX_RETRIES} retries ({diagnostics})"
+            )
 
         return response
 
@@ -151,16 +183,22 @@ def login(session, username, password):
     logged-in detection stay single-sourced. Raises if credentials are rejected.
     """
 
-    soup = BeautifulSoup(make_request(session, strings.AO3_LOGIN_URL).text, "html.parser")
+    soup = BeautifulSoup(
+        make_request(session, strings.AO3_LOGIN_URL).text, "html.parser"
+    )
     token = parse_soup.get_login_token(soup)
     payload = get_payload(username, password, token)
     response = make_request(session, strings.AO3_LOGIN_URL, method="POST", data=payload)
     if not parse_soup.is_logged_in(BeautifulSoup(response.text, "html.parser")):
-        raise Exception("AO3 login failed - check the AO3_USERNAME / AO3_PASSWORD secrets "
-                        "and that the CI account credentials are valid")
+        raise Exception(
+            "AO3 login failed - check the AO3_USERNAME / AO3_PASSWORD secrets "
+            "and that the CI account credentials are valid"
+        )
 
 
-def fetch_work_page(session, url_path: str, cache: dict[str, requests.Response]) -> requests.Response:
+def fetch_work_page(
+    session, url_path: str, cache: dict[str, requests.Response]
+) -> requests.Response:
     """Fetch a work page, caching the response so each unique URL is fetched at most once."""
 
     if url_path not in cache:
@@ -168,16 +206,18 @@ def fetch_work_page(session, url_path: str, cache: dict[str, requests.Response])
     return cache[url_path]
 
 
-def download_html(session, fixture, fixtures_dir, only_new, page_cache: dict[str, requests.Response]):
+def download_html(
+    session, fixture, fixtures_dir, only_new, page_cache: dict[str, requests.Response]
+):
     """Download an HTML fixture."""
 
     path = os.path.join(fixtures_dir, fixture["name"])
     if only_new and os.path.exists(path):
-        print('fixture already exists, skipping')
+        print("fixture already exists, skipping")
         return
     text = fetch_work_page(session, fixture["url"], page_cache).text
-    if (fixture['type'] == 'page' and not meaningful_change(text, path)):
-        print(f'no meaningful changes in {fixture["name"]}, skipping')
+    if fixture["type"] == "page" and not meaningful_change(text, path):
+        print(f"no meaningful changes in {fixture['name']}, skipping")
         return
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
@@ -193,10 +233,10 @@ def ebook_current_path(fixtures_dir: str, fixture: dict[str, str]) -> str:
 def meaningful_change(text, path):
     if not os.path.exists(path):
         return True
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         existing = f.read()
-    old_soup = BeautifulSoup(existing, 'html.parser')
-    new_soup = BeautifulSoup(text, 'html.parser')
+    old_soup = BeautifulSoup(existing, "html.parser")
+    new_soup = BeautifulSoup(text, "html.parser")
 
     def strip(soup):
         for selector in IGNORED_SELECTORS:
@@ -208,9 +248,14 @@ def meaningful_change(text, path):
     return str(old_soup) != str(new_soup)
 
 
-def download_book(session, fixture, fixtures_dir, only_new,
-                  page_cache: dict[str, requests.Response],
-                  soup_cache: dict[str, BeautifulSoup]):
+def download_book(
+    session,
+    fixture,
+    fixtures_dir,
+    only_new,
+    page_cache: dict[str, requests.Response],
+    soup_cache: dict[str, BeautifulSoup],
+):
     """Download an ebook fixture by fetching the work page and following the download link.
 
     Ebook fixtures live in `ebook/<work_id>/current/<name>`. If the freshly-downloaded
@@ -221,14 +266,14 @@ def download_book(session, fixture, fixtures_dir, only_new,
 
     path = ebook_current_path(fixtures_dir, fixture)
     if only_new and os.path.exists(path):
-        print('fixture already exists, skipping')
+        print("fixture already exists, skipping")
         return
     url_path = fixture["url"]
     if url_path not in soup_cache:
         response = fetch_work_page(session, url_path, page_cache)
         soup_cache[url_path] = BeautifulSoup(response.text, "html.parser")
     soup = soup_cache[url_path]
-    ext = os.path.splitext(fixture['name'])[1].upper()[1:]
+    ext = os.path.splitext(fixture["name"])[1].upper()[1:]
     download_url = parse_soup.get_download_link(soup, ext)
     book_response = make_request(session, download_url)
     new_bytes = book_response.content
@@ -236,7 +281,7 @@ def download_book(session, fixture, fixtures_dir, only_new,
         with open(path, "rb") as f:
             existing_bytes = f.read()
         if existing_bytes == new_bytes:
-            print(f'no changes in {fixture["name"]}, skipping')
+            print(f"no changes in {fixture['name']}, skipping")
             return
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
@@ -265,12 +310,21 @@ def process_fixtures(fixtures, session, args, failed: list[str], succeeded: list
 
         try:
             if fixture["type"] == "page":
-                download_html(session, fixture, args.fixtures_dir, args.only_new, page_cache)
+                download_html(
+                    session, fixture, args.fixtures_dir, args.only_new, page_cache
+                )
             else:
-                download_book(session, fixture, args.fixtures_dir, args.only_new, page_cache, soup_cache)
+                download_book(
+                    session,
+                    fixture,
+                    args.fixtures_dir,
+                    args.only_new,
+                    page_cache,
+                    soup_cache,
+                )
             succeeded.append(name)
             consecutive_cloudflare = 0
-            print(f"  ok")
+            print("  ok")
         except exceptions.CloudflareException as e:
             failed.append(name)
             consecutive_cloudflare += 1
@@ -278,7 +332,8 @@ def process_fixtures(fixtures, session, args, failed: list[str], succeeded: list
             if consecutive_cloudflare >= CLOUDFLARE_ABORT_THRESHOLD:
                 raise RefreshAbortedException(
                     f"{consecutive_cloudflare} fixtures in a row got cloudflare challenges "
-                    "on every attempt - the runner appears to be blocked")
+                    "on every attempt - the runner appears to be blocked"
+                )
         except Exception as e:
             failed.append(name)
             consecutive_cloudflare = 0
@@ -289,16 +344,31 @@ def process_fixtures(fixtures, session, args, failed: list[str], succeeded: list
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Download fresh test fixtures from live AO3.")
-    parser.add_argument("--fixtures-dir", default=os.path.join("test", "fixtures"),
-                        help="directory to write fixtures to (default: test/fixtures)")
-    parser.add_argument("--delay", type=int, default=5,
-                        help="seconds to wait between requests (default: 5)")
-    parser.add_argument("--only-new", action="store_true",
-                        help="only download fixtures that don't exist yet")
-    parser.add_argument("--require-login", action="store_true",
-                        help="fail if the login-gated fixtures cannot be refreshed "
-                             "because of missing credentials. Used by CI.")
+    parser = argparse.ArgumentParser(
+        description="Download fresh test fixtures from live AO3."
+    )
+    parser.add_argument(
+        "--fixtures-dir",
+        default=os.path.join("test", "fixtures"),
+        help="directory to write fixtures to (default: test/fixtures)",
+    )
+    parser.add_argument(
+        "--delay",
+        type=int,
+        default=5,
+        help="seconds to wait between requests (default: 5)",
+    )
+    parser.add_argument(
+        "--only-new",
+        action="store_true",
+        help="only download fixtures that don't exist yet",
+    )
+    parser.add_argument(
+        "--require-login",
+        action="store_true",
+        help="fail if the login-gated fixtures cannot be refreshed "
+        "because of missing credentials. Used by CI.",
+    )
     args = parser.parse_args()
 
     os.makedirs(args.fixtures_dir, exist_ok=True)
@@ -331,12 +401,16 @@ def main():
                     process_fixtures(logged_in, session, args, failed, succeeded)
             elif args.require_login:
                 print()
-                print("ERROR: --require-login was set but AO3_USERNAME / AO3_PASSWORD are not set")
+                print(
+                    "ERROR: --require-login was set but AO3_USERNAME / AO3_PASSWORD are not set"
+                )
                 failed.extend(f["name"] for f in logged_in)
             else:
                 print()
-                print("no credentials provided, skipping logged-in fixtures: "
-                      + ", ".join(f["name"] for f in logged_in))
+                print(
+                    "no credentials provided, skipping logged-in fixtures: "
+                    + ", ".join(f["name"] for f in logged_in)
+                )
     except RefreshAbortedException as e:
         attempted = set(succeeded) | set(failed)
         skipped = [f["name"] for f in FIXTURES if f["name"] not in attempted]

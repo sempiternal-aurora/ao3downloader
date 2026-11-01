@@ -1,17 +1,17 @@
 import traceback
 
+from tqdm import tqdm
+
 from ao3downloader import parse_text, strings, update
 from ao3downloader.actions import shared
 from ao3downloader.ao3 import Ao3
 from ao3downloader.fileio import FileOps
 from ao3downloader.repo import Repository
-from tqdm import tqdm
 
 
 def action():
     fileops = FileOps()
     with Repository(fileops) as repo:
-        
         folder = shared.redownload_folder()
         oldtypes = shared.redownload_oldtypes()
         newtypes = shared.redownload_newtypes()
@@ -29,14 +29,27 @@ def action():
         works = []
         for fic in tqdm(fics):
             try:
-                work = update.process_file(fic['path'], fic['filetype'], False)
-                if work: 
+                work = update.process_file(fic["path"], fic["filetype"], False)
+                if work:
                     works.append(work)
-                    fileops.write_log({'message': strings.MESSAGE_FIC_FILE, 'path': fic['path'], 'link': work['link']})
+                    fileops.write_log(
+                        {
+                            "message": strings.MESSAGE_FIC_FILE,
+                            "path": fic["path"],
+                            "link": work["link"],
+                        }
+                    )
             except Exception as e:
-                fileops.write_log({'message': strings.ERROR_REDOWNLOAD, 'path': fic['path'], 'error': str(e), 'stacktrace': traceback.format_exc()})
+                fileops.write_log(
+                    {
+                        "message": strings.ERROR_REDOWNLOAD,
+                        "path": fic["path"],
+                        "error": str(e),
+                        "stacktrace": traceback.format_exc(),
+                    }
+                )
 
-        urls = list(set(map(lambda x: x['link'], works)))
+        urls = list({x["link"] for x in works})
 
         print(strings.REDOWNLOAD_INFO_DONE.format(len(urls)))
 
@@ -45,15 +58,22 @@ def action():
             print(strings.INFO_EXCLUDING_WORKS)
             titles = parse_text.get_title_dict(logs)
             unsuccessful = parse_text.get_unsuccessful_downloads(logs)
-            maximum = fileops.get_ini_value_integer(strings.INI_NAME_LENGTH, strings.INI_DEFAULT_NAME_LENGTH)
-            urls = list(filter(lambda x:
-                not fileops.file_exists(x, titles, newtypes, maximum)
-                and x not in unsuccessful,
-                urls))
+            maximum = fileops.get_ini_value_integer(
+                strings.INI_NAME_LENGTH, strings.INI_DEFAULT_NAME_LENGTH
+            )
+            urls = list(
+                filter(
+                    lambda x: (
+                        not fileops.file_exists(x, titles, newtypes, maximum)
+                        and x not in unsuccessful
+                    ),
+                    urls,
+                )
+            )
 
         if links_only:
             if urls:
-                path = shared.write_links_file(fileops, urls, 'redownload_links')
+                path = shared.write_links_file(fileops, urls, "redownload_links")
                 print(strings.INFO_LINKS_FILE_WRITTEN.format(len(urls), path))
             else:
                 print(strings.INFO_NO_LINKS_TO_WRITE)

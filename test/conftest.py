@@ -10,9 +10,8 @@ from bs4 import BeautifulSoup
 from ao3downloader.fileio import FileOps
 from ao3downloader.repo import Repository
 
-
-FIXTURES_DIR = os.path.join(os.path.dirname(__file__), 'fixtures')
-EBOOK_DIR = os.path.join(FIXTURES_DIR, 'ebook')
+FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+EBOOK_DIR = os.path.join(FIXTURES_DIR, "ebook")
 
 
 def ebook_fixtures(work_id: str, ext: str) -> list[str]:
@@ -24,9 +23,9 @@ def ebook_fixtures(work_id: str, ext: str) -> list[str]:
     live fixture still parses correctly without help from archived versions).
     """
     root = os.path.join(EBOOK_DIR, work_id)
-    paths = sorted(glob.glob(os.path.join(root, 'current', '*' + ext)))
-    if os.environ.get('AO3_FIXTURE_MODE') != 'current_only':
-        paths += sorted(glob.glob(os.path.join(root, 'archive', '*' + ext)))
+    paths = sorted(glob.glob(os.path.join(root, "current", "*" + ext)))
+    if os.environ.get("AO3_FIXTURE_MODE") != "current_only":
+        paths += sorted(glob.glob(os.path.join(root, "archive", "*" + ext)))
     return paths
 
 
@@ -37,31 +36,36 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     refresh to decide whether the pre-refresh ebooks need to be archived.
     """
     for item in items:
-        callspec = getattr(item, 'callspec', None)
+        callspec = getattr(item, "callspec", None)
         if callspec is None:
             continue
-        if any(isinstance(value, str) and value.startswith(EBOOK_DIR)
-               for value in callspec.params.values()):
+        if any(
+            isinstance(value, str) and value.startswith(EBOOK_DIR)
+            for value in callspec.params.values()
+        ):
             item.add_marker(pytest.mark.ebook)
 
 
 # region shared loaders
+
 
 @pytest.fixture
 def fixture_soup():
     """Factory: load test/fixtures/<name>.html as a BeautifulSoup."""
 
     def _load(name: str) -> BeautifulSoup:
-        path = os.path.join(FIXTURES_DIR, name + '.html')
-        with open(path, encoding='utf-8') as f:
-            return BeautifulSoup(f.read(), 'html.parser')
+        path = os.path.join(FIXTURES_DIR, name + ".html")
+        with open(path, encoding="utf-8") as f:
+            return BeautifulSoup(f.read(), "html.parser")
 
     return _load
+
 
 # endregion
 
 
 # region fileops / repo
+
 
 @pytest.fixture
 def fake_fileops(tmp_path, monkeypatch) -> FileOps:
@@ -69,10 +73,10 @@ def fake_fileops(tmp_path, monkeypatch) -> FileOps:
 
     monkeypatch.chdir(tmp_path)  # so construction can't pick up a real settings.ini
     fileops = FileOps()
-    fileops.logfile = str(tmp_path / 'log.jsonl')
-    fileops.inifile = str(tmp_path / 'settings.ini')
-    fileops.settingsfile = str(tmp_path / 'data.json')
-    fileops.downloadfolder = str(tmp_path / 'downloads')
+    fileops.logfile = str(tmp_path / "log.jsonl")
+    fileops.inifile = str(tmp_path / "settings.ini")
+    fileops.settingsfile = str(tmp_path / "data.json")
+    fileops.downloadfolder = str(tmp_path / "downloads")
     os.makedirs(fileops.downloadfolder, exist_ok=True)
     return fileops
 
@@ -81,9 +85,10 @@ def fake_fileops(tmp_path, monkeypatch) -> FileOps:
 def mock_repo(fake_fileops, monkeypatch) -> Repository:
     """Repository with a mocked session and no-op sleep, for retry-logic tests."""
 
-    monkeypatch.setattr('ao3downloader.repo.sleep', lambda _: None)
+    monkeypatch.setattr("ao3downloader.repo.sleep", lambda _: None)
     repo = Repository(fake_fileops)
     repo.session = MagicMock()
     return repo
+
 
 # endregion

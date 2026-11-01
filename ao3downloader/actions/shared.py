@@ -9,13 +9,13 @@ from ao3downloader.repo import Repository
 
 def series() -> bool:
     print(strings.AO3_PROMPT_SERIES)
-    series = True if input() == strings.PROMPT_YES else False
+    series = input() == strings.PROMPT_YES
     return series
 
 
 def link(fileops: FileOps) -> str:
     link = get_last_page_downloaded(fileops)
-    if not link: 
+    if not link:
         print(strings.AO3_PROMPT_LINK)
         link = input()
     return link
@@ -37,32 +37,31 @@ def pages() -> int | None:
 
 def images() -> bool:
     print(strings.AO3_PROMPT_IMAGES)
-    images = True if input() == strings.PROMPT_YES else False
+    images = input() == strings.PROMPT_YES
     return images
 
 
 def links_only() -> bool:
     print(strings.PROMPT_LINKS_ONLY)
-    return True if input() == strings.PROMPT_YES else False
+    return input() == strings.PROMPT_YES
 
 
 def write_links_file(fileops: FileOps, urls: list[str], prefix: str) -> str:
-    filename = f'{prefix}_{datetime.datetime.now().strftime("%m%d%Y%H%M%S")}.txt'
+    filename = f"{prefix}_{datetime.datetime.now().strftime('%m%d%Y%H%M%S')}.txt"
     path = os.path.join(fileops.downloadfolder, filename)
-    with open(path, 'w') as f:
-        for url in urls:
-            f.write(url + '\n')
+    with open(path, "w") as f:
+        f.writelines(url + "\n" for url in urls)
     return path
 
 
 def metadata() -> bool:
     print(strings.AO3_PROMPT_METADATA)
-    return True if input() == strings.PROMPT_YES else False
+    return input() == strings.PROMPT_YES
 
 
 def ignorelist_check_deleted() -> bool:
     print(strings.IGNORELIST_PROMPT_CHECK_DELETED)
-    return True if input() == strings.PROMPT_YES else False
+    return input() == strings.PROMPT_YES
 
 
 def visited(fileops: FileOps, filetypes: list[str]) -> list[str]:
@@ -71,23 +70,26 @@ def visited(fileops: FileOps, filetypes: list[str]) -> list[str]:
     if logs:
         print(strings.AO3_INFO_VISITED)
         titles = parse_text.get_title_dict(logs)
-        maximum = fileops.get_ini_value_integer(strings.INI_NAME_LENGTH, strings.INI_DEFAULT_NAME_LENGTH)
-        visited = list({x for x in titles if 
-            fileops.file_exists(x, titles, filetypes, maximum)})
+        maximum = fileops.get_ini_value_integer(
+            strings.INI_NAME_LENGTH, strings.INI_DEFAULT_NAME_LENGTH
+        )
+        visited = list(
+            {x for x in titles if fileops.file_exists(x, titles, filetypes, maximum)}
+        )
     if os.path.exists(strings.IGNORELIST_FILE_NAME):
-        with open(strings.IGNORELIST_FILE_NAME, 'r', encoding='utf-8') as f: 
-                visited.extend([x[:x.find('; ')] for x in f.readlines()])
+        with open(strings.IGNORELIST_FILE_NAME, "r", encoding="utf-8") as f:
+            visited.extend([x[: x.find("; ")] for x in f])
     return visited
 
 
 def pinboard_date() -> datetime.datetime | None:
     print(strings.PINBOARD_PROMPT_DATE)
-    getdate = True if input() == strings.PROMPT_YES else False
+    getdate = input() == strings.PROMPT_YES
     if getdate:
-        date_format = 'mm/dd/yyyy'
+        date_format = "mm/dd/yyyy"
         print(strings.PINBOARD_PROMPT_ENTER_DATE.format(date_format))
         inputdate = input()
-        date = datetime.datetime.strptime(inputdate, '%m/%d/%Y')
+        date = datetime.datetime.strptime(inputdate, "%m/%d/%Y")
     else:
         date = None
     return date
@@ -95,14 +97,12 @@ def pinboard_date() -> datetime.datetime | None:
 
 def pinboard_exclude() -> bool:
     print(strings.PINBOARD_PROMPT_INCLUDE_UNREAD)
-    exclude_toread = False if input() == strings.PROMPT_YES else True
+    exclude_toread = input() != strings.PROMPT_YES
     return exclude_toread
 
 
 def api_token(fileops: FileOps) -> str:
-    return fileops.setting(
-            strings.PINBOARD_PROMPT_API_TOKEN, 
-            strings.SETTING_API_TOKEN)
+    return fileops.setting(strings.PINBOARD_PROMPT_API_TOKEN, strings.SETTING_API_TOKEN)
 
 
 def links_file() -> str:
@@ -130,7 +130,7 @@ def redownload_folder() -> str:
 def redownload_oldtypes() -> list[str]:
     oldtypes = []
     while True:
-        filetype = ''
+        filetype = ""
         while filetype not in strings.UPDATE_ACCEPTABLE_FILE_TYPES:
             print(strings.REDOWNLOAD_PROMPT_FILE_TYPE)
             filetype = input()
@@ -146,7 +146,7 @@ def redownload_oldtypes() -> list[str]:
 def redownload_newtypes() -> list[str]:
     newtypes = []
     while True:
-        filetype = ''
+        filetype = ""
         while filetype not in strings.AO3_ACCEPTABLE_DOWNLOAD_TYPES:
             print(strings.AO3_PROMPT_DOWNLOAD_TYPE)
             filetype = input()
@@ -161,28 +161,34 @@ def redownload_newtypes() -> list[str]:
 
 def marked_for_later_link(fileops: FileOps) -> str:
     username = fileops.get_setting(strings.SETTING_USERNAME)
-    return f'{strings.AO3_BASE_URL}/users/{username}/readings?show=to-read'
+    return f"{strings.AO3_BASE_URL}/users/{username}/readings?show=to-read"
 
 
-def ao3_login(repo: Repository, fileops: FileOps, force: bool=False) -> None:
+def ao3_login(repo: Repository, fileops: FileOps, force: bool = False) -> None:
 
     if force:
         login = True
     else:
         print(strings.AO3_PROMPT_LOGIN)
-        login = False if input() == strings.PROMPT_NO else True
+        login = input() != strings.PROMPT_NO
 
     if login:
         savepassword = fileops.get_ini_value_boolean(strings.INI_PASSWORD_SAVE, False)
-        passwordprompt = strings.AO3_PROMPT_PASSWORD_SAVE_TRUE if savepassword else strings.AO3_PROMPT_PASSWORD_SAVE_FALSE
+        passwordprompt = (
+            strings.AO3_PROMPT_PASSWORD_SAVE_TRUE
+            if savepassword
+            else strings.AO3_PROMPT_PASSWORD_SAVE_FALSE
+        )
 
         username = fileops.setting(
-            strings.AO3_PROMPT_USERNAME,
-            strings.SETTING_USERNAME)
+            strings.AO3_PROMPT_USERNAME, strings.SETTING_USERNAME
+        )
         password = fileops.setting(
             strings.AO3_PROMPT_PASSWORD.format(passwordprompt),
             strings.SETTING_PASSWORD,
-            savepassword, True)
+            savepassword,
+            True,
+        )
 
         print(strings.AO3_INFO_LOGIN)
         try:
@@ -198,10 +204,11 @@ def download_types(fileops: FileOps) -> list[str]:
     filetypes = fileops.get_setting(strings.SETTING_FILETYPES)
     if isinstance(filetypes, list):
         print(strings.AO3_PROMPT_USE_SAVED_DOWNLOAD_TYPES)
-        if input() == strings.PROMPT_YES: return filetypes
+        if input() == strings.PROMPT_YES:
+            return filetypes
     filetypes = []
-    while(True):
-        filetype = ''
+    while True:
+        filetype = ""
         while filetype not in strings.AO3_ACCEPTABLE_DOWNLOAD_TYPES:
             print(strings.AO3_PROMPT_DOWNLOAD_TYPE)
             filetype = input()
@@ -218,10 +225,11 @@ def update_types(fileops: FileOps) -> list[str]:
     filetypes = fileops.get_setting(strings.SETTING_UPDATE_FILETYPES)
     if isinstance(filetypes, list):
         print(strings.UPDATE_PROMPT_USE_SAVED_FILE_TYPES)
-        if input() == strings.PROMPT_YES: return filetypes
+        if input() == strings.PROMPT_YES:
+            return filetypes
     filetypes = []
-    while(True):
-        filetype = ''
+    while True:
+        filetype = ""
         while filetype not in strings.UPDATE_ACCEPTABLE_FILE_TYPES:
             print(strings.UPDATE_PROMPT_FILE_TYPE)
             filetype = input()
@@ -266,7 +274,7 @@ def get_files_of_type(folder: str, filetypes: list[str]) -> list[dict[str, str]]
             filetype = os.path.splitext(file)[1].upper()[1:]
             if filetype in filetypes:
                 path = os.path.join(subdir, file)
-                results.append({'path': path, 'filetype': filetype})
+                results.append({"path": path, "filetype": filetype})
     print(strings.UPDATE_INFO_NUM_RETURNED.format(len(results)))
     return results
 
@@ -275,17 +283,36 @@ def get_last_page_downloaded(fileops: FileOps) -> str | None:
     latest = None
     try:
         logs = fileops.load_logfile()
-        starts = filter(lambda x: x and 'message' in x and x['message'] == strings.INFO_STARTING_PAGE, logs)
-        if not starts: starts = filter(lambda x: 'starting' in x, logs) # backwards compatibility
-        bydate = sorted(starts, key=lambda x: datetime.datetime.strptime(x['timestamp'], '%m/%d/%Y, %H:%M:%S'), reverse=True)
-        if bydate: latest = bydate[0]
+        starts = filter(
+            lambda x: (
+                x and "message" in x and x["message"] == strings.INFO_STARTING_PAGE
+            ),
+            logs,
+        )
+        if not starts:
+            starts = filter(lambda x: "starting" in x, logs)  # backwards compatibility
+        bydate = sorted(
+            starts,
+            key=lambda x: datetime.datetime.strptime(
+                x["timestamp"], "%m/%d/%Y, %H:%M:%S"
+            ),
+            reverse=True,
+        )
+        if bydate:
+            latest = bydate[0]
     except Exception as e:
-        fileops.write_log({'error': str(e), 'message': strings.ERROR_LOG_FILE, 'stacktrace': traceback.format_exc()})
+        fileops.write_log(
+            {
+                "error": str(e),
+                "message": strings.ERROR_LOG_FILE,
+                "stacktrace": traceback.format_exc(),
+            }
+        )
 
     link = None
     if latest:
         print(strings.AO3_PROMPT_LAST_PAGE)
         if input() == strings.PROMPT_YES:
-            link = latest['link'] if 'link' in latest else latest['starting']
+            link = latest["link"] if "link" in latest else latest["starting"]
 
     return link

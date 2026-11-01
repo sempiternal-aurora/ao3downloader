@@ -1,17 +1,17 @@
 import traceback
 
+from tqdm import tqdm
+
 from ao3downloader import parse_text, strings, update
 from ao3downloader.actions import shared
 from ao3downloader.ao3 import Ao3
 from ao3downloader.fileio import FileOps
 from ao3downloader.repo import Repository
-from tqdm import tqdm
 
 
 def action():
     fileops = FileOps()
     with Repository(fileops) as repo:
-
         folder = shared.update_folder(fileops)
         update_filetypes = shared.update_types(fileops)
         links_only = shared.links_only()
@@ -30,35 +30,51 @@ def action():
         works = []
         for file in tqdm(files):
             try:
-                work = update.process_file(file['path'], file['filetype'], True, True)
+                work = update.process_file(file["path"], file["filetype"], True, True)
                 if work:
                     works.append(work)
-                    fileops.write_log({'message': strings.MESSAGE_SERIES_FILE, 'path': file['path'], 'link': work['link'], 'series': work['series']})
+                    fileops.write_log(
+                        {
+                            "message": strings.MESSAGE_SERIES_FILE,
+                            "path": file["path"],
+                            "link": work["link"],
+                            "series": work["series"],
+                        }
+                    )
             except Exception as e:
-                fileops.write_log({'message': strings.ERROR_FIC_IN_SERIES, 'path': file['path'], 'error': str(e), 'stacktrace': traceback.format_exc()})    
+                fileops.write_log(
+                    {
+                        "message": strings.ERROR_FIC_IN_SERIES,
+                        "path": file["path"],
+                        "error": str(e),
+                        "stacktrace": traceback.format_exc(),
+                    }
+                )
 
         print(strings.SERIES_INFO_URLS)
 
         series = dict[str, list[str]]()
         for work in works:
-            for s in work['series']:
+            for s in work["series"]:
                 if s not in series:
                     series[s] = []
-                link = work['link'].replace('http://', 'https://')
+                link = work["link"].replace("http://", "https://")
                 if link not in series[s]:
                     series[s].append(link)
 
         logs = fileops.load_logfile()
         if logs:
             unsuccessful = parse_text.get_unsuccessful_downloads(logs)
-            if any('/series/' in x for x in unsuccessful):
+            if any("/series/" in x for x in unsuccessful):
                 print(strings.SERIES_INFO_FILTER)
                 series = {k: v for k, v in series.items() if k not in unsuccessful}
 
         if links_only:
             series_urls = list(series.keys())
             if series_urls:
-                path = shared.write_links_file(fileops, series_urls, 'update_series_links')
+                path = shared.write_links_file(
+                    fileops, series_urls, "update_series_links"
+                )
                 print(strings.INFO_LINKS_FILE_WRITTEN.format(len(series_urls), path))
             else:
                 print(strings.INFO_NO_LINKS_TO_WRITE)

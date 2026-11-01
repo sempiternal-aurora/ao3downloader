@@ -2,19 +2,23 @@ import csv
 import datetime
 import os
 
-from ao3downloader import strings
 from ao3downloader.actions import shared
 from ao3downloader.ao3 import Ao3
 from ao3downloader.fileio import FileOps
 from ao3downloader.repo import Repository
 
+OPTIONAL_COLUMNS = [
+    "date_bookmarked",
+    "bookmarker_tags",
+    "bookmarker_notes",
+    "last_visited",
+    "times_visited",
+]
 
-OPTIONAL_COLUMNS = ['date_bookmarked', 'bookmarker_tags', 'bookmarker_notes', 'last_visited', 'times_visited']
 
 def action():
     fileops = FileOps()
     with Repository(fileops) as repo:
-
         link = shared.link(fileops)
         series = shared.series()
         pages = shared.pages()
@@ -28,11 +32,17 @@ def action():
         if metatdata:
             flattened = [flatten_dict(k, v) for k, v in links.items()]
             remove_empty_optional_columns(flattened)
-            filename = f'links_{datetime.datetime.now().strftime("%m%d%Y%H%M%S")}.csv'
-            with open(os.path.join(fileops.downloadfolder, filename), 'w', newline='', encoding='utf-8') as f:
+            filename = f"links_{datetime.datetime.now().strftime('%m%d%Y%H%M%S')}.csv"
+            with open(
+                os.path.join(fileops.downloadfolder, filename),
+                "w",
+                newline="",
+                encoding="utf-8",
+            ) as f:
                 keys = []
                 sample = flattened[0]
-                for key in sample: keys.append(key)
+                for key in sample:
+                    keys.append(key)
                 writer = csv.DictWriter(f, fieldnames=keys)
                 writer.writeheader()
                 for item in flattened:
@@ -41,14 +51,13 @@ def action():
                     except ValueError:
                         fileops.write_log(item)
         else:
-            filename = f'links_{datetime.datetime.now().strftime("%m%d%Y%H%M%S")}.txt'
-            with open(os.path.join(fileops.downloadfolder, filename), 'w') as f:
-                for l in links:
-                    f.write(l + '\n')
+            filename = f"links_{datetime.datetime.now().strftime('%m%d%Y%H%M%S')}.txt"
+            with open(os.path.join(fileops.downloadfolder, filename), "w") as f:
+                f.writelines(l + "\n" for l in links)
 
 
 def flatten_dict(k: str, v: dict) -> dict:
-    v['link'] = k
+    v["link"] = k
     return v
 
 

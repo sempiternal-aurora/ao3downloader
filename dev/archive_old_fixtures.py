@@ -22,28 +22,30 @@ import os
 import subprocess
 import sys
 
-
-FIXTURES_ROOT = os.path.join('test', 'fixtures', 'ebook')
+FIXTURES_ROOT = os.path.join("test", "fixtures", "ebook")
 
 
 def modified_current_files() -> list[str]:
     """Return ebook current/ paths modified vs HEAD (relative to repo root)."""
 
     result = subprocess.run(
-        ['git', 'diff', '--name-only', 'HEAD', '--', FIXTURES_ROOT],
-        check=True, capture_output=True, text=True,
+        ["git", "diff", "--name-only", "HEAD", "--", FIXTURES_ROOT],
+        check=True,
+        capture_output=True,
+        text=True,
     )
     # git reports paths with forward slashes on all platforms
     paths = result.stdout.strip().splitlines()
-    return [p for p in paths if '/current/' in p]
+    return [p for p in paths if "/current/" in p]
 
 
 def pre_refresh_bytes(path: str) -> bytes:
     """Retrieve the HEAD version of `path` as bytes."""
 
     result = subprocess.run(
-        ['git', 'show', f'HEAD:{path}'],
-        check=True, capture_output=True,
+        ["git", "show", f"HEAD:{path}"],
+        check=True,
+        capture_output=True,
     )
     return result.stdout
 
@@ -57,7 +59,7 @@ def archive_path(current_path: str, content_hash: str) -> str:
     work_dir = os.path.dirname(os.path.dirname(current_path))
     base = os.path.basename(current_path)
     name, ext = os.path.splitext(base)
-    return os.path.join(work_dir, 'archive', f'{name}-{content_hash}{ext}')
+    return os.path.join(work_dir, "archive", f"{name}-{content_hash}{ext}")
 
 
 def short_hash(data: bytes) -> str:
@@ -72,7 +74,7 @@ def main() -> int:
             old_bytes = pre_refresh_bytes(path)
         except subprocess.CalledProcessError:
             # path was newly added in this refresh, not pre-existing — nothing to archive
-            print(f'skipping {path}: no HEAD version')
+            print(f"skipping {path}: no HEAD version")
             continue
 
         content_hash = short_hash(old_bytes)
@@ -80,19 +82,19 @@ def main() -> int:
 
         if os.path.exists(dest):
             skipped.append(dest)
-            print(f'skipping {dest}: already archived')
+            print(f"skipping {dest}: already archived")
             continue
 
         os.makedirs(os.path.dirname(dest), exist_ok=True)
-        with open(dest, 'wb') as f:
+        with open(dest, "wb") as f:
             f.write(old_bytes)
         archived.append(dest)
-        print(f'archived {path} -> {dest}')
+        print(f"archived {path} -> {dest}")
 
     print()
-    print(f'{len(archived)} archived, {len(skipped)} skipped')
+    print(f"{len(archived)} archived, {len(skipped)} skipped")
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

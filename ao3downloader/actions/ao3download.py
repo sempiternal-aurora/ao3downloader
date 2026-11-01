@@ -8,7 +8,6 @@ from ao3downloader.repo import Repository
 def action():
     fileops = FileOps()
     with Repository(fileops) as repo:
-
         filetypes = shared.download_types(fileops)
         series = shared.series()
         link = shared.link(fileops)

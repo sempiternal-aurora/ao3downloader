@@ -1,18 +1,18 @@
 import itertools
 import traceback
 
+from tqdm import tqdm
+
 from ao3downloader import parse_text, strings, update
 from ao3downloader.actions import shared
 from ao3downloader.ao3 import Ao3
 from ao3downloader.fileio import FileOps
 from ao3downloader.repo import Repository
-from tqdm import tqdm
 
 
 def action():
     fileops = FileOps()
     with Repository(fileops) as repo:
-
         folder = shared.update_folder(fileops)
         update_filetypes = shared.update_types(fileops)
         links_only = shared.links_only()
@@ -31,33 +31,48 @@ def action():
         works = []
         for fic in tqdm(fics):
             try:
-                work = update.process_file(fic['path'], fic['filetype'])
+                work = update.process_file(fic["path"], fic["filetype"])
                 if work:
                     works.append(work)
-                    fileops.write_log({'message': strings.MESSAGE_INCOMPLETE_FIC, 'path': fic['path'], 'link': work['link']})
+                    fileops.write_log(
+                        {
+                            "message": strings.MESSAGE_INCOMPLETE_FIC,
+                            "path": fic["path"],
+                            "link": work["link"],
+                        }
+                    )
             except Exception as e:
-                fileops.write_log({'message': strings.ERROR_INCOMPLETE_FIC, 'path': fic['path'], 'error': str(e), 'stacktrace': traceback.format_exc()})    
+                fileops.write_log(
+                    {
+                        "message": strings.ERROR_INCOMPLETE_FIC,
+                        "path": fic["path"],
+                        "error": str(e),
+                        "stacktrace": traceback.format_exc(),
+                    }
+                )
 
         # remove duplicate work links. take lowest number of chapters.
         works_cleaned = []
-        works_sorted = sorted(works, key=lambda x: x['link'])
-        for link, group in itertools.groupby(works_sorted, lambda x: x['link']):
-            chapters = min(group, key=lambda x: x['chapters'])['chapters']
-            works_cleaned.append({'link': link, 'chapters': chapters})
+        works_sorted = sorted(works, key=lambda x: x["link"])
+        for link, group in itertools.groupby(works_sorted, lambda x: x["link"]):
+            chapters = min(group, key=lambda x: x["chapters"])["chapters"]
+            works_cleaned.append({"link": link, "chapters": chapters})
 
         print(strings.UPDATE_INFO_URLS_DONE)
 
         logs = fileops.load_logfile()
         if logs:
             unsuccessful = parse_text.get_unsuccessful_downloads(logs)
-            if any('/works/' in x for x in unsuccessful):
+            if any("/works/" in x for x in unsuccessful):
                 print(strings.UPDATE_INFO_FILTER)
-                works_cleaned = list(filter(lambda x: x['link'] not in unsuccessful, works_cleaned))
+                works_cleaned = list(
+                    filter(lambda x: x["link"] not in unsuccessful, works_cleaned)
+                )
 
         if links_only:
-            urls = [w['link'] for w in works_cleaned]
+            urls = [w["link"] for w in works_cleaned]
             if urls:
-                path = shared.write_links_file(fileops, urls, 'update_links')
+                path = shared.write_links_file(fileops, urls, "update_links")
                 print(strings.INFO_LINKS_FILE_WRITTEN.format(len(urls), path))
             else:
                 print(strings.INFO_NO_LINKS_TO_WRITE)
@@ -68,4 +83,4 @@ def action():
         ao3 = Ao3(repo, fileops, download_filetypes, None, False, images)
 
         for work in tqdm(works_cleaned):
-            ao3.update(work['link'], work['chapters'])
+            ao3.update(work["link"], work["chapters"])
